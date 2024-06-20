@@ -1,0 +1,359 @@
+.TH JAKHEX 1 "20 June 2024" "jakhex"
+.SH NAME
+jakhex \- curses based full screen hex editor
+.SH SYNOPSYS
+.I jakhex
+[file [+offset]]
+.P
+.I jakhex
+-h
+.SH OPTIONS
+.TP
+.I "-h"
+Prints invocation and key bindings.
+.TP
+.I "+offset"
+Given after a file, represents a jump offset into the file. Positive numbers are an asbolute addresses. Negative numbers are offsets from the end, -1 being the last byte.
+.SH DESCRIPTION
+.I jakhex
+is a full screen, curses based hex editor. It can not only view, but also edit,
+including inserting an arbitrary amount of bytes or removing an arbitrary amount
+of bytes in the middle of the file.
+.PP
+It offers navigation features based on absolute and relative offsets, substring
+search commands, and 26 marked addresses.
+.PP
+It supports region based commands and a single clipboard/yank buffer.
+.PP
+.I jakhex
+shows you the memory you are looking at in a variety of interpretations, from
+a single ASCII character to big endian double precision numbers, as well as
+a bit stream.
+.SH KEY BINDINGS
+.I Note:
+Keys are case sensitive.
+.I `a'
+means the
+.B `A'
+key on the keyboard,
+.I `A'
+means the
+.B `A'
+key on the keyboard pressed together with
+.B "`SHIFT'."
+I hope that makes sense.
+.PP
+.I `^C'
+means
+.B `C'
+pressed together with
+.B "`CTRL'."
+.SS Editing Modes
+When
+.I jakhex
+starts up, you are in
+.IR "Normal Hex Editing Mode."
+You can use
+.B "`i'"
+,
+.B "`F4'"
+, or
+.B "`.r'"
+to enter
+.IR "ASCII Editing Mode"
+\[char46]
+.PP
+In
+.IR "ASCII Editing Mode"
+, most commands are not available. Refer to
+.IR "ASCII Editing Mode"
+for key bindings.
+Use
+.B "`ESC'"
+,
+.B "`^C'"
+, or
+.B "`F4'"
+to go back to
+.IR "Normal Hex Editing Mode."
+.PP
+All other sections refer to
+.IR "Normal Hex Editing Mode."
+.SS General
+.TP
+.B "F1, !"
+Shows you the key bindings.
+.TP
+.B "q"
+Prompts if you want to exit. If you hit
+.B "`Y'"
+then it exits.
+.TP
+.B "Q"
+Exits without prompting.
+.TP
+.B "^C, ^G, ESC"
+Cancels out of a prompt without executing the command.
+.TP
+.B "^L"
+Redraws the screen.
+.SS Movement
+.TP
+.B "h, j, k, l, arrows"
+Move around one or 32 bytes at a time.
+.TP
+.B "PGUP, PGDOWN, ^F, ^B, ), ("
+Move around one screen at a time.
+.TP
+.B "HOME"
+Go to address 0.
+.TP
+.B "END"
+Go to the last byte in the buffer.
+.TP
+.B "+"
+Jump forward an amount of bytes. When prompted, you may type in a decimal
+number, or prepend it with `0x' for a hex value.
+.TP
+.B "-"
+Jump backward an amount of bytes.
+.TP
+.B "g"
+Jump to an absolute address. When prompted, you may type in a decimal number, or prepend it with `0x' for a hex value.
+.SS Searching
+.TP
+.B /
+Jump to the next occurrence of the string after the current cursor position.
+.B ?
+Jump to the previous occurrence of the string just prior to the current cursor
+position.
+.PP
+Search commands change the prompt (bottom-left) to a
+.B `?'
+and expect you to type in something. You can start typing in hex byte values,
+.I e.g.
+.I "`A0 FF 42 44'"
+(must be full bytes).
+Alternatively, you can type in
+.I `t'
+followed by printable ASCII text,
+.I e.g.
+.I "`tHello, World!'."
+Hitting
+.B `ENTER'
+commits to the search, hitting
+.B `^C'
+,
+.B `^G'
+, or
+.B `ESCAPE'
+cancels out.
+.SS Editing Bytes
+.TP
+.B "Number keys 0-9 and a-f"
+Immediately punch in a nibble in hex.
+.TP
+.B "<"
+Prompts for a number, and inserts that many bytes at the cursor position.
+.TP
+.B ">"
+Prompts for a number, and inserts that many bytes after the current byte.
+.IP
+Useful for populating an empty buffer.
+.TP
+.B "$, ^K"
+Truncate file at current cursor position.
+.IP
+If run at address 0, you will have an empty buffer.
+.TP
+.B "., :"
+Punch-in mode.
+.IP
+Brings up a menu and asks you what you want to input, from a single character
+to a double precision number with big endianness.
+.IP
+What you typed will get converted to bytes, and they will overwrite the memory
+starting at the current cursor position.
+.IP
+Mode
+.I r
+puts you in
+.IR "ASCII Editing mode".
+Refer to that subsection for more information.
+.SS Markers and Region Commands
+.TP
+.B "m"
+Prompts you for a letter of the alphabet.
+Stores the current cursor position in that register.
+.TP
+.B "M"
+Prints a list of all 26 markers and their currently assigned addresses
+.TP
+.B "G, ', `"
+Prompts for a single letter of the alphabet.
+Moves the cursor to the position stored in the marker register.
+.TP
+.B x
+Prompts for a pair of markers. Removes the bytes between the first and the
+second marker. The buffer will shrink by
+.I M2
+-
+.I M1
++ 1 bytes.
+.TP
+.B @
+Prompts for a pair of markers. Overwrites the bytes in that range with NULLs.
+.TP
+.B W
+Prompts for a pair of markers, then a file name. The bytes in the marked
+region will be saved to a file.
+.TP
+.B y
+Prompts for a pair of makers. The memory in that region will be stored in
+a hidden buffer.
+.TP
+.B p
+Inserts the contents of the hidden clipboard buffer at the current cursor position.
+.TP
+.B P
+Inserts the contents of the hiddent clipboard buffer AFTER the current cursor position.
+.TP
+.B *
+Overwrites memory starting from the current cursor position with the contents
+of the hidden clipboard buffer.
+.SS File Manipulation
+.TP
+.B "o, F3, ^O"
+Prompts for a file name. Replaces the current buffer with the contents of that file.
+.TP
+.B "w, F2, ^S"
+Prompts for a file name. Writes the current buffer into that file.
+.TP
+.B r
+Prompts for a file name. Inserts the contents of that file at the current cursor position.
+The buffer will grow by how many bytes were read in.
+.TP
+.B R
+Prompts for a file name. Inserts the contents of that file after the current cursor position.
+The buffer will grow by how many bytes were read in.
+.SS ASCII Editing Mode
+This mode changes the prompt at the bottom left to a single
+.B "`A'."
+Use
+.B "ESC"
+,
+.B "F4"
+, or
+.B "^C"
+to get back to
+.IR "Normal Hex Editing Mode."
+.PP
+In this mode, the keys are bound like this:
+.TP
+.B F1
+Shows key bindings
+.TP
+.R "any printable ASCII characters"
+Punches in those bytes as you type them.
+.TP
+.R "arrow keys"
+Move around
+.TP
+.B "PGUP, PGDOWN"
+Move around one sceen at a time.
+.TP
+.B "BACKSPACE"
+Move left. This does not
+.I `erase'
+anything.
+.TP
+.B "HOME"
+Go to the first byte in the buffer.
+.TP
+.B "END
+Go to the last byte in the buffer.
+.TP
+.B "F4, ^C, ^D"
+Switch to
+.IR "Normal Hex Editing Mode."
+.TP
+.B "F2, ^S"
+Save to file.
+.TP
+.B "F3, ^O"
+Load a file and replace buffer contents.
+.SH SEE ALSO
+.BR od (1)
+,
+.BR hdump (1)
+,
+.BR hexedit (1)
+,
+.BR bpe (1)
+,
+.BR hexed (1)
+,
+.BR beav (1)
+,
+.BR xxd (1)
+.SH AUTHOR
+Vlad Meșco <vlad.mesco@gmail.com>.
+
+This project started life at <https://github.com/alzwded/jakhex>
+.SH LICENSE
+Copyright 2024 Vlad Meșco
+.PP
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+.IP 1.
+"Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer."
+.IP 2.
+Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+.PP
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS” AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+.SH LIMITATIONS
+.IP \(em 2
+its in-memory buffer is stored as a big contiugous array
+.IP "    \(em" 6
+meaning, loading files implies trying to allocate that much memory
+.IP "    \(em" 6
+you can derive from that what kind of file sizes you can load at any time
+.IP \(em 2
+the screen width is fixed to 80 columns, 32 bytes per line
+.IP "    \(em" 6
+other hex editors annoy me in that I need to fiddle with the screen size
+to get the line width to align with a round number that's easy to do maths with
+.IP \(em 2
+searching doesn't remember what you previously searched for (but you can use
+tmux's/X11's kill buffer to repeatedly paste the same search string)
+.IP \(em 2
+the details pane can't be hidden, so you need at least 13 lines of screen
+.IP \(em 2
+searching doesn't support patterns nor regular expressions
+.IP \(em 2
+cursor position and file size showed only in hex
+.IP \(em 2
+region commands always prompt you for a pair of markers
+.IP \(em 2
+keys are not rebindable, and the bindings are brain dead. Be sure to print
+out a cheat sheet!
+.IP \(em 2
+single buffer only
+.IP \(em 2
+any file related commands update the "last mentioned file name" which may not be what you want
+.IP \(em 2
+markers are not relocated if you insert bytes before their current address
+(they hold a number which can be used as an absolute address)
+.IP \(em 2
+ASCII only; I imagine you're here mostly to look at bits and bytes, possibly
+to diagnose why you have invalid UTF-8 at address 0x145f2200. The only issue
+is with filenames containing non-ASCII or non-printable characters; you can
+symlink your file to ~/link to work around this.
+.IP \(em 2
+there are no preferences and no rc files
+.IP \(em 2
+while the `g`, `+` and `-` commands accept both dec and hex input, the
+command line invocation only accepts decimal input
+.IP \(em 2
+string search limits you to a 2^31-2 long needle, but I hope that doesn't
+bother you. I haven't actually tested with anything longer than what you
+can type off the top of your head, so it's more of a theoretical limit
