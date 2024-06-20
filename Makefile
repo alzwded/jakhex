@@ -12,6 +12,7 @@ jakhex: $(SRCS)
 
 install: jakhex
 	install -m 755 -D -t $(PREFIX)/bin jakhex
+	install -m 755 -D -t $(PREFIX)/share/man/man1 jakhex.1
 
 clean:
 	rm -rf jakhex
