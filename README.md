@@ -69,3 +69,16 @@ Why does this exist?
 
 Easy: I didn't have a full featured hex editor that was relatively easy and
 pain free to set up and use. So I wrote my own that does all the stuff I need.
+
+Building
+========
+
+This project depends on some curses library, e.g. `ncurses`, installed as a
+system library and system headers.
+
+Run
+
+```
+make
+make install
+```
