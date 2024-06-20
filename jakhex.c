@@ -40,6 +40,14 @@ size_t markers[26];
 unsigned char* clipboard = NULL;
 size_t clipboardsize = 0;
 
+char* mystrdup(const char* s)
+{
+    char* rval = malloc(strlen(s) + 1);
+    if(!rval) abort();
+    strcpy(rval, s);
+    return rval;
+}
+
 // exit function
 static void finish(int sig);
 static void showhelp(const char* argv0);
@@ -215,7 +223,7 @@ int main(int argc, char* argv[])
         if(argc > 2) {
             offset = atol(argv[2]);
         }
-        fname = strdup(argv[1]);
+        fname = mystrdup(argv[1]);
     }
 
     /* if there's no tty, complain and exit;
@@ -356,7 +364,7 @@ void test_file(void)
     memsize = 64 * 40;
     for(int i = 0; i < memsize; mem[i++] = i);
 
-    if(fname == NULL) fname = strdup("file.bin");
+    if(fname == NULL) fname = mystrdup("file.bin");
 
     const char* hellotext = "F1/! for help. Here's a sandbox.";
     strcpy(mem, hellotext);
@@ -1271,7 +1279,7 @@ char* read_string(const char* prompt)
     }
 
     if(nbuf == 0) return NULL;
-    return strdup(buf);
+    return mystrdup(buf);
 }
 
 /* prompt the user for a file name. Updates `fname'. Prepopulates the
@@ -1321,7 +1329,7 @@ char* read_filename(void)
     }
 
     if(nbuf == 0) return NULL;
-    return strdup(buf);
+    return mystrdup(buf);
 }
 
 /* Save the full buffer to a file. Calls `read_filename()' */
@@ -1332,7 +1340,7 @@ void save_file(void)
     if(!buf) return;
 
     free(fname);
-    fname = strdup(buf);
+    fname = mystrdup(buf);
 
     FILE* f = fopen(buf, "wb");
     if(!f) {
@@ -1419,7 +1427,7 @@ void insert_file(size_t before)
     if(!buf) return;
 
     free(fname);
-    fname = strdup(buf);
+    fname = mystrdup(buf);
 
     FILE* f = fopen(buf, "rb");
     if(!f) {
@@ -1720,7 +1728,7 @@ void write_region(void)
     if(!buf) return;
 
     free(fname);
-    fname = strdup(buf);
+    fname = mystrdup(buf);
 
     FILE* f = fopen(buf, "wb");
     if(!f) {
