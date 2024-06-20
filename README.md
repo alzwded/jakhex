@@ -3,6 +3,8 @@ jakhex
 
 *jakhex* is a curses based full screen hex editor.
 
+![screenshot](./screenshot.png)
+
 It supports the following **features**:
 
 - curses based full screen interface hex editor
@@ -61,3 +63,9 @@ jakhex file +40960
 ```
 
 See `jakhex -h` or `man ./jakhex.1` for more information.
+
+Why does this exist?
+====================
+
+Easy: I didn't have a full featured hex editor that was relatively easy and
+pain free to set up and use. So I wrote my own that does all the stuff I need.
