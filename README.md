@@ -24,6 +24,8 @@ It supports the following **features**:
   clipboard buffer
 - efficiently search both forward and backwards for an arbitrary binary string,
   typed in either in hex or ASCII
+- ability to edit large files, to the extent of your patience and RAM.
+  I've successfully edited files slightly larger than 4GiB.
 
 It has the following *limitations*:
 
@@ -104,3 +106,4 @@ Changes
   for multibyte reverse searches; forward search is unaffected.
 - fix display or ridiculously large files; the buffer contents were correct,
   the display wasn't
+- fix bug inserting bytes in files larger than 4GB

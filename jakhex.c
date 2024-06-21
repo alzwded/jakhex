@@ -362,9 +362,9 @@ void finish(int code)
 /* allocate an initial memory buffer */
 void new_file(void)
 {
-    mem = realloc(mem, 64 * 1024);
+    mem = realloc(mem, 64ul * 1024ul);
     if(!mem) abort();
-    memcapacity = 64 * 1024;
+    memcapacity = 64ul * 1024ul;
     memsize = 0;
     memset(mem, 0, memcapacity);
     memoffset = 0;
@@ -1146,11 +1146,13 @@ void handle_text(int c)
 /* insert nbytes NULL bytes before `before'; this grows the buffer by nbytes */
 void insert_n_nulls(size_t before, size_t nbytes)
 {
+    if(nbytes == 0) return;
     if(memcapacity < memsize + nbytes) {
-        long byThisMuch = nbytes;
-        if(byThisMuch < 64 * 1024) byThisMuch = 1024;
+        size_t byThisMuch = nbytes;
+        if(byThisMuch < 64ul * 1024ul) byThisMuch = 1024ul;
         mem = realloc(mem, memcapacity + byThisMuch);
         if(!mem) abort();
+        memcapacity += byThisMuch;
     }
     memmove(mem + before + nbytes, mem + before, memsize - before);
     memset(mem + before, 0, nbytes);
@@ -1198,6 +1200,11 @@ void insert_nulls(size_t before)
         buf[nbuf] = '\0';
         mvhline(LINES - 1, col, ' ', COLS - col);
         mvprintw(LINES - 1, col, "%s", buf);
+    }
+
+    if(nbuf == 0) {
+        update_status();
+        return;
     }
 
     long nbytes = atol(buf);
@@ -1405,6 +1412,7 @@ void open_file1(void)
     free(mem);
     mem = newmem;
     memsize = haveread;
+    memcapacity = sz;
     memoffset = 0;
     windowOffset = 0;
     redraw();
