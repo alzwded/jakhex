@@ -1,4 +1,4 @@
-VERSION = 1.0.0
+VERSION = 1.0.1
 CC ?= gcc
 #CFLAGS ?= -O2 -std=c99
 CFLAGS ?= -O2 -Wall -std=c99
