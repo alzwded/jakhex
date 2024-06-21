@@ -98,3 +98,8 @@ Changes
 - update Makefile to compile with `-O2` by default
 - update README
 - add `^G` in normal mode to report file size in a better human readable way
+- change reverse search to include the byte you are currently on; this is
+  annoying for single byte reverse searches, but it is what you actually want
+  for multibyte reverse searches; forward search is unaffected.
+- fix display or ridiculously large files; the buffer contents were correct,
+  the display wasn't

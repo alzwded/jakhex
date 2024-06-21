@@ -315,8 +315,8 @@ void redraw(void)
     clear();
 
     // print file
-    for(int i = 0; i < LINES - 10 - 1; ++i) {
-        int loffset = (windowOffset + i) * 32;
+    for(size_t i = 0; i < LINES - 10 - 1; ++i) {
+        int loffset = (windowOffset + i) * 32ul;
         // address of first byte of line
         attron(A_STANDOUT);
         mvaddch(i, 0, HEX[(loffset >>28) & 0xF]);
@@ -333,7 +333,7 @@ void redraw(void)
             int col = 9 // addr column
                     + (b/4) // number of full words
                     + b*2;
-            int off = (windowOffset + i) * 32 + b;
+            size_t off = (windowOffset + i) * 32ul + (unsigned long)b;
             if(off >= memsize) break;
             mvaddch(i, col, HEX[mem[off] >> 4]);
             mvaddch(i, col+1, HEX[mem[off] & 0xF]);
@@ -1608,7 +1608,13 @@ void find_backward(void)
 {
     if(memsize == 0 || memoffset == 0) return;
     unsigned char* from = mem;
-    size_t nfrom = memoffset;
+    // Why memoffset+1?
+    // Consider
+    //   00 00 00 00 42 00 43
+    //                     ^
+    // You'd expect rsearch "00 42 00 43" to put you 3 bytes back.
+    // That's why.
+    size_t nfrom = memoffset + 1;
     return find_cb(from, nfrom, rmemsearch);
 }
 
