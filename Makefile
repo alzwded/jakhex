@@ -1,7 +1,7 @@
 VERSION = 1.0.0
 CC ?= gcc
 #CFLAGS ?= -O2 -std=c99
-CFLAGS ?= -g -std=c99
+CFLAGS ?= -O2 -Wall -std=c99
 LDFLAGS ?= -lcurses
 PREFIX ?= /usr/local
 # TODO -lncursesw to handle unicode
