@@ -524,30 +524,18 @@ void update_status(void)
         mvaddch(LINES - 1, 2 + i, c);
     }
 
-    // file pos
-    mvaddch(LINES - 1, COLS - 1 -21, HEX[(memoffset>>28) & 0xF]);
-    mvaddch(LINES - 1, COLS - 1 -20, HEX[(memoffset>>24) & 0xF]);
-    mvaddch(LINES - 1, COLS - 1 -19, HEX[(memoffset>>20) & 0xF]);
-    mvaddch(LINES - 1, COLS - 1 -18, HEX[(memoffset>>16) & 0xF]);
-    mvaddch(LINES - 1, COLS - 1 -17, HEX[(memoffset>>12) & 0xF]);
-    mvaddch(LINES - 1, COLS - 1 -16, HEX[(memoffset>> 8) & 0xF]);
-    mvaddch(LINES - 1, COLS - 1 -15, HEX[(memoffset>> 4) & 0xF]);
-    mvaddch(LINES - 1, COLS - 1 -14, HEX[(memoffset>> 0) & 0xF]);
-    mvaddch(LINES - 1, COLS - 1 -13, '/');
-    mvaddch(LINES - 1, COLS - 1 -12, HEX[(memsize>>28) & 0xF]);
-    mvaddch(LINES - 1, COLS - 1 -11, HEX[(memsize>>24) & 0xF]);
-    mvaddch(LINES - 1, COLS - 1 -10, HEX[(memsize>>20) & 0xF]);
-    mvaddch(LINES - 1, COLS - 1 - 9, HEX[(memsize>>16) & 0xF]);
-    mvaddch(LINES - 1, COLS - 1 - 8, HEX[(memsize>>12) & 0xF]);
-    mvaddch(LINES - 1, COLS - 1 - 7, HEX[(memsize>> 8) & 0xF]);
-    mvaddch(LINES - 1, COLS - 1 - 6, HEX[(memsize>> 4) & 0xF]);
-    mvaddch(LINES - 1, COLS - 1 - 5, HEX[(memsize>> 0) & 0xF]);
+    // file position
+    if(memsize > 0xFFFFFFFFul) {
+        mvprintw(LINES - 1, COLS - 5 - 16 - 1 - 16, "%016lX/%016lX",
+                memoffset, memsize);
+    } else {
+        mvprintw(LINES - 1, COLS - 5 - 8 - 1 - 8, "%08lX/%08lX",
+                memoffset, memsize);
+    }
 
     double dblMemsize = memsize + !memsize;
     int percent = (int)((memoffset + 0.5 * lownibble) * 100.0 / dblMemsize);
-    mvaddch(LINES - 1, COLS - 1 - 3, percent / 10 + '0');
-    mvaddch(LINES - 1, COLS - 1 - 2, percent % 10 + '0');
-    mvaddch(LINES - 1, COLS - 1 - 1, '%');
+    mvprintw(LINES - 1, COLS - 5, "%3d%%", percent);
 }
 
 /* update details pane, showing byte interpretations as int, float, string etc */

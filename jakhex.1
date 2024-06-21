@@ -324,11 +324,17 @@ its in-memory buffer is stored as a big contiugous array
 meaning, loading files implies trying to allocate that much memory
 .IP "    \(bu" 6
 you can derive from that what kind of file sizes you can load at any time
+.IP "    \(bu" 6
+I just want to note, I have successfully edited a ~5GB file, it just takes
+a while to load.
 .IP \(bu 2
 the screen width is fixed to 80 columns, 32 bytes per line
 .IP "    \(bu" 6
 other hex editors annoy me in that I need to fiddle with the screen size
 to get the line width to align with a round number that's easy to do maths with
+.IP "    \(bu" 6
+only the bottom 32bits of addresses are printed in the first column, because
+I ran out of space
 .IP \(bu 2
 searching doesn't remember what you previously searched for (but you can use
 tmux's/X11's kill buffer to repeatedly paste the same search string)

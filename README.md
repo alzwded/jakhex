@@ -33,6 +33,7 @@ It has the following *limitations*:
 - the screen width is fixed to 80 columns, 32 bytes per line
   * other hex editors annoy me in that I need to fiddle with the screen size
     to get the line width to align with a round number that's easy to do maths with
+  * only the bottom 32bits of addresses are printed in the first column, because I ran out of screen space
 - searching doesn't remember what you previously searched for (but you can use
   tmux's/X11's kill buffer to repeatedly paste the same search string)
 - the details pane can't be hidden, so you need at least 13 lines of screen
