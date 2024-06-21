@@ -52,7 +52,7 @@ pressed together with
 When
 .I jakhex
 starts up, you are in
-.IR "Normal Hex Editing Mode."
+.I "Normal Hex Editing Mode."
 You can use
 .B "`i'"
 ,
@@ -60,13 +60,13 @@ You can use
 , or
 .B "`.r'"
 to enter
-.IR "ASCII Editing Mode"
+.I "ASCII Editing Mode"
 \[char46]
 .PP
 In
-.IR "ASCII Editing Mode"
+.I "ASCII Editing Mode"
 , most commands are not available. Refer to
-.IR "ASCII Editing Mode"
+.I "ASCII Editing Mode"
 for key bindings.
 Use
 .B "`ESC'"
@@ -75,10 +75,10 @@ Use
 , or
 .B "`F4'"
 to go back to
-.IR "Normal Hex Editing Mode."
+.I "Normal Hex Editing Mode."
 .PP
 All other sections refer to
-.IR "Normal Hex Editing Mode."
+.I "Normal Hex Editing Mode."
 .SS General
 .TP
 .B "F1, !"
@@ -92,7 +92,14 @@ then it exits.
 .B "Q"
 Exits without prompting.
 .TP
-.B "^C, ^G, ESC"
+.B "^G"
+Shows alternative cursor position information (i.e. in decimal),
+or cancels like
+.B "`^C'"
+or
+.B "`ESC'."
+.TP
+.B "^C, ESC"
 Cancels out of a prompt without executing the command.
 .TP
 .B "^L"
@@ -178,7 +185,7 @@ starting at the current cursor position.
 Mode
 .I r
 puts you in
-.IR "ASCII Editing mode".
+.I "ASCII Editing mode".
 Refer to that subsection for more information.
 .SS Markers and Region Commands
 .TP
@@ -246,7 +253,7 @@ Use
 , or
 .B "^C"
 to get back to
-.IR "Normal Hex Editing Mode."
+.I "Normal Hex Editing Mode."
 .PP
 In this mode, the keys are bound like this:
 .TP
@@ -275,7 +282,7 @@ Go to the last byte in the buffer.
 .TP
 .B "F4, ^C, ^D"
 Switch to
-.IR "Normal Hex Editing Mode."
+.I "Normal Hex Editing Mode."
 .TP
 .B "F2, ^S"
 Save to file.
@@ -311,49 +318,47 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 .PP
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS” AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .SH LIMITATIONS
-.IP \(em 2
+.IP \(bu 2
 its in-memory buffer is stored as a big contiugous array
-.IP "    \(em" 6
+.IP "    \(bu" 6
 meaning, loading files implies trying to allocate that much memory
-.IP "    \(em" 6
+.IP "    \(bu" 6
 you can derive from that what kind of file sizes you can load at any time
-.IP \(em 2
+.IP \(bu 2
 the screen width is fixed to 80 columns, 32 bytes per line
-.IP "    \(em" 6
+.IP "    \(bu" 6
 other hex editors annoy me in that I need to fiddle with the screen size
 to get the line width to align with a round number that's easy to do maths with
-.IP \(em 2
+.IP \(bu 2
 searching doesn't remember what you previously searched for (but you can use
 tmux's/X11's kill buffer to repeatedly paste the same search string)
-.IP \(em 2
+.IP \(bu 2
 the details pane can't be hidden, so you need at least 13 lines of screen
-.IP \(em 2
+.IP \(bu 2
 searching doesn't support patterns nor regular expressions
-.IP \(em 2
-cursor position and file size showed only in hex
-.IP \(em 2
+.IP \(bu 2
 region commands always prompt you for a pair of markers
-.IP \(em 2
+.IP \(bu 2
 keys are not rebindable, and the bindings are brain dead. Be sure to print
 out a cheat sheet!
-.IP \(em 2
+.IP \(bu 2
 single buffer only
-.IP \(em 2
+.IP \(bu 2
 any file related commands update the "last mentioned file name" which may not be what you want
-.IP \(em 2
+.IP \(bu 2
 markers are not relocated if you insert bytes before their current address
 (they hold a number which can be used as an absolute address)
-.IP \(em 2
+.IP \(bu 2
 ASCII only; I imagine you're here mostly to look at bits and bytes, possibly
 to diagnose why you have invalid UTF-8 at address 0x145f2200. The only issue
 is with filenames containing non-ASCII or non-printable characters; you can
 symlink your file to ~/link to work around this.
-.IP \(em 2
+.IP \(bu 2
 there are no preferences and no rc files
-.IP \(em 2
+.IP \(bu 2
 while the `g`, `+` and `-` commands accept both dec and hex input, the
 command line invocation only accepts decimal input
-.IP \(em 2
+.IP \(bu 2
 string search limits you to a 2^31-2 long needle, but I hope that doesn't
 bother you. I haven't actually tested with anything longer than what you
 can type off the top of your head, so it's more of a theoretical limit

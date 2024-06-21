@@ -37,7 +37,6 @@ It has the following *limitations*:
   tmux's/X11's kill buffer to repeatedly paste the same search string)
 - the details pane can't be hidden, so you need at least 13 lines of screen
 - searching doesn't support patterns nor regular expressions
-- cursor position and file size showed only in hex
 - region commands always prompt you for a pair of markers
 - keys are not rebindable, and the bindings are brain dead. Be sure to print
   out a cheat sheet!
@@ -76,9 +75,26 @@ Building
 This project depends on some curses library, e.g. `ncurses`, installed as a
 system library and system headers.
 
+The code is (or *should* be) conformant to C99 and POSIX, so all you need is
+a C99 compiler on a POSIX compatible system. I've only tested on Alpine and
+RHEL at the time of writing.
+
 Run
 
 ```
 make
 make install
 ```
+
+Changes
+=======
+
+1.0.0 -> 1.0.1
+--------------
+
+- Fix bug in `x` (*kill region*) command which would cause a hang / crash
+- man page tweaks
+- fix warnings reported by `gcc -Wall`
+- update Makefile to compile with `-O2` by default
+- update README
+- add `^G` in normal mode to report file size in a better human readable way

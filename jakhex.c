@@ -22,10 +22,24 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS” 
 
 #include <curses.h>
 
-extern unsigned char*
-memsearch(unsigned char*, size_t, unsigned char*, size_t);
-extern unsigned char*
-rmemsearch(unsigned char*, size_t, unsigned char*, size_t);
+static float i32tofloat32(int i)
+{
+    void* pv = &i;
+    float* pf = (float*)pv;
+    return *pf;
+}
+
+static double i64tofloat64(long i)
+{
+    void* pv = &i;
+    double* pf = (double*)pv;
+    return *pf;
+}
+
+extern void*
+memsearch(void*, size_t, void*, size_t);
+extern void*
+rmemsearch(void*, size_t, void*, size_t);
 
 // buffer state
 unsigned char* mem = NULL;
@@ -60,6 +74,7 @@ static void update_details(void);
 static void printbinle(int l, int c);
 static void printbinbe(int l, int c);
 static void printbin(int l, int c, unsigned long);
+static void show_detailed_cursor(void);
 
 // movement functions
 enum DIR {
@@ -74,7 +89,7 @@ static void list_markers(void);
 static void goto_marker(void);
 static void find_cb(
         unsigned char* from, size_t nfrom,
-        unsigned char* (*cb_search)(unsigned char*, size_t, unsigned char*, size_t));
+        void* (*cb_search)(void*, size_t, void*, size_t));
 static void find_forward(void);
 static void find_backward(void);
 
@@ -155,7 +170,8 @@ static const char* HELP[] = {
 "p           insert clipboard\n",
 "P           append clipboard\n",
 "*           overwrite with clipboard\n",
-"^G ESC ^C   cancel prompt of complicated command\n",
+"^G          show alternative cursor position or cancel\n",
+"ESC ^C      cancel prompt of complicated command\n",
 "$, ^K       truncate file\n",
 "^L          refresh\n",
 //"TAB ^I *    hide byte interpretation\n",
@@ -362,12 +378,14 @@ void test_file(void)
 
     // DEBUG
     memsize = 64 * 40;
-    for(int i = 0; i < memsize; mem[i++] = i);
+    for(int i = 0; i < memsize; ++i) {
+        mem[i] = i;
+    }
 
     if(fname == NULL) fname = mystrdup("file.bin");
 
     const char* hellotext = "F1/! for help. Here's a sandbox.";
-    strcpy(mem, hellotext);
+    memcpy(mem, hellotext, strlen(hellotext));
 
     float floats[] = { 1.f, 2.f, -3.f, 112233445566.f, -1122334455667788.f, 3.14159f, -3.14159f, 0.f };
     memcpy(mem + strlen(hellotext), floats, sizeof(floats));
@@ -470,6 +488,22 @@ void adjust_screen(void)
     }
 }
 
+/* update status line to show detailed cursor position */
+void show_detailed_cursor(void)
+{
+    mvhline(LINES - 1, 0, ' ', COLS);
+    attron(A_STANDOUT);
+    mvaddch(LINES - 1, 0, '.');
+    attroff(A_STANDOUT);
+    mvprintw(LINES - 1, 1, " %20lu/%lu bytes  %s nibble",
+            memoffset, memsize,
+            lownibble ? "low" : "high");
+
+    double dblMemsize = memsize + !memsize;
+    int percent = (int)((memoffset + 0.5 * lownibble) * 100.0 / dblMemsize);
+    mvprintw(LINES - 1, COLS - 5, "%3d%%", percent);
+}
+
 /* update status line to show cursor position */
 void update_status(void)
 {
@@ -548,8 +582,8 @@ void update_details(void)
         mvprintw(LINES - 8 - 1, 18 + 19, "u32be: %-10u", i32be);
         mvprintw(LINES - 8 - 1, 18 + 19 + 18, "s32be: %-11d", (signed)i32be);
 
-        float f32le = *((float*)&i32le);
-        float f32be = *((float*)&i32be);
+        float f32le = i32tofloat32(i32le);
+        float f32be = i32tofloat32(i32be);
         mvprintw(LINES - 3 - 1, 0, "f32le: %-15.7g", f32le);
         mvprintw(LINES - 3 - 1, 40, "f32be: %-15.7g", f32be);
     } else {
@@ -582,8 +616,8 @@ void update_details(void)
 
         mvprintw(LINES - 6 - 1, 57, "h64be: %016lx", i64be);
 
-        double f64le = *((double*)&i64le);
-        double f64be = *((double*)&i64be);
+        double f64le = i64tofloat64(i64le);
+        double f64be = i64tofloat64(i64be);
         mvprintw(LINES - 2 - 1, 0, "f64le: %-30.15lg", f64le);
         mvprintw(LINES - 2 - 1, 40, "f64be: %-30.15lg", f64be);
     } else {
@@ -596,19 +630,6 @@ void update_details(void)
     printbinle(LINES - 5 - 1, 8);
     mvprintw(LINES - 4 - 1, 0, "b64be: ");
     printbinbe(LINES - 4 - 1, 8);
-
-    {
-        unsigned char be[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
-        unsigned char le[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
-        for(int i = 0; i < 8; ++i) {
-            be[i] = (memoffset + i < memsize) ? mem[memoffset + i] : 0;
-            le[7-i] = (memoffset + 7 - i < memsize) ? mem[memoffset + 7 - i] : 0;
-        }
-    }
-
-    // (up to) 64 bit streams
-    // le
-    // be
 
     char toPrint[65];
     toPrint[64] = '\0';
@@ -824,7 +845,6 @@ void punch_ascii(int c)
 /* utility to ask the user a yes/no question */
 int question(const char* q)
 {
-    size_t lll = strlen(q);
     mvhline(LINES - 1, 0, ' ', COLS);
     mvprintw(LINES - 1, 0, "%s (Y/N)", q);
 
@@ -1036,6 +1056,9 @@ void handle_normal(int c)
                         break;
         case 'W':
                         write_region();
+                        break;
+        case 7: // ^G
+                        show_detailed_cursor();
                         break;
 
     }
@@ -1498,7 +1521,7 @@ void advance_offset(long sign)
    updates memoffset if anything is found. This does not loop around.  */
 void find_cb(
         unsigned char* from, size_t nfrom,
-        unsigned char* (*cb_search)(unsigned char*, size_t, unsigned char*, size_t))
+        void* (*cb_search)(void*, size_t, void*, size_t))
 {
     if(memsize == 0) return;
     char* s = read_string("? ");
@@ -1697,6 +1720,7 @@ void kill_region(void)
     memoffset = a1;
     if(memoffset > 0) --memoffset;
 
+    adjust_screen();
     redraw();
 }
 

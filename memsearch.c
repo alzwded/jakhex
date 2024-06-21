@@ -36,14 +36,16 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS” 
   *
   * If haystack is shorted than needle, returns NULL.
   */
-unsigned char*
+void*
 memsearch(
-        unsigned char* restrict haystack,
+        void* restrict vhaystack,
         size_t nhaystack,
-        unsigned char* restrict needle,
+        void* restrict vneedle,
         size_t nneedle
         )
 {
+    unsigned char* haystack = vhaystack;
+    unsigned char* needle = vneedle;
     unsigned char* rval = NULL;
 
     // sanity
@@ -137,11 +139,11 @@ END:
   *
   * If haystack is shorted than needle, returns NULL.
   */
-unsigned char*
+void*
 rmemsearch(
-        unsigned char* restrict fhaystack,
+        unsigned char* restrict vfhaystack,
         size_t nhaystack,
-        unsigned char* restrict fneedle,
+        unsigned char* restrict vfneedle,
         size_t nneedle
         )
 {
@@ -152,6 +154,8 @@ rmemsearch(
     // from the end (both needle and haystack) and we use negative offsets
     // everywhere. The return value also must subtract nneedle to get you
     // to the start of the match
+    unsigned char* fhaystack = vfhaystack;
+    unsigned char* fneedle = vfneedle;
     unsigned char* rval = NULL;
 
     // sanity
