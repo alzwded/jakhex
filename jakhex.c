@@ -475,7 +475,7 @@ void adjust_screen(void)
 {
     size_t l = memoffset / 32;
     size_t a = windowOffset;
-    size_t b = windowOffset + LINES - 10;
+    size_t b = windowOffset + LINES - 10 - 1;
 
     if(l < a || l >= b) {
         if(l > ((LINES - 10 - 1) / 2)) {
