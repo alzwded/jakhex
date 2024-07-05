@@ -92,7 +92,7 @@ make install
 Changes
 =======
 
-1.0.1 -> 1.0.2
+1.0.1 -> 1.0.3
 --------------
 
 - fix bug where the window would scroll too late once hitting the separator
