@@ -860,7 +860,7 @@ void myhelp(void)
             n = 0;
             clear();
         }
-		mvprintw(n, 0, HELP[i]);
+		mvprintw(n, 0, "%s", HELP[i]);
 	}
     mvprintw(n, 0, "Press any key to continue...");
     getch();
@@ -1230,7 +1230,7 @@ void truncate_file(size_t at)
 char read_key(const char* prompt, const char* allowed)
 {
     mvhline(LINES - 1, 0, ' ', COLS);
-    mvprintw(LINES - 1, 0, prompt);
+    mvprintw(LINES - 1, 0, "%s", prompt);
     int col = strlen(prompt);
     while(true) {
         int c = mvgetch(LINES - 1, col);
@@ -1305,7 +1305,6 @@ char* read_string(const char* prompt)
 char* read_filename(void)
 {
     mvhline(LINES - 1, 0, ' ', COLS);
-    mvprintw(LINES - 1, 0, "");
     char buf[4096];
     int nbuf = 0;
     buf[0] = '\0';

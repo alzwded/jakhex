@@ -1,6 +1,5 @@
 VERSION = 1.0.3
 CC ?= gcc
-#CFLAGS ?= -O2 -std=c99
 CFLAGS ?= -O2 -Wall -std=c99
 LDFLAGS ?= -lcurses
 PREFIX ?= /usr/local
