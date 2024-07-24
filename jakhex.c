@@ -151,7 +151,7 @@ static const char* HELP[] = {
 "-           jump backward n bytes\n",
 "^F/^B       screenful\n",
 ")/(         screenful\n",
-"g           goto address\n",
+"g           goto address; negative means from end\n",
 "/           find\n",
 "?           rfind\n",
 "n           continue searching forward\n",
@@ -236,7 +236,7 @@ int main(int argc, char* argv[])
 {
     /* check command line arguments first; if we need to show help,
        then ncurses needs to be off. */
-    size_t offset = 0;
+    ssize_t offset = 0;
     if(argc > 1) {
         if(strcmp(argv[1], "-h") == 0) {
             showhelp(argv[0]);
@@ -1493,11 +1493,17 @@ void goto_command(void)
     char* s = read_string("Address: ");
     update_status();
     if(!s) return;
-    unsigned long addr;
-    sscanf(s, "%li", &addr);
+    ssize_t addr;
+    sscanf(s, "%zi", &addr);
     free(s);
-    if(addr < memsize) {
+    if(addr >= 0 && addr < memsize) {
         memoffset = addr;
+        adjust_screen();
+        update_details();
+        update_status();
+    } else if(addr < 0 && (ssize_t)memsize + addr >= 0) {
+        size_t a = (size_t)(-addr);
+        memoffset = memsize - a;
         adjust_screen();
         update_details();
         update_status();

@@ -92,6 +92,11 @@ make install
 Changes
 =======
 
+1.0.4 -> 1.0.5
+--------------
+
+- add support for negative offsets in command line invocation and in `g` command
+
 1.0.3 -> 1.0.4
 --------------
 
