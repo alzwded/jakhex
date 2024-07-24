@@ -53,6 +53,8 @@ int lownibble = 0;
 size_t markers[26];
 unsigned char* clipboard = NULL;
 size_t clipboardsize = 0;
+unsigned char* searchString = NULL;
+size_t nSearchString = 0;
 
 char* mystrdup(const char* s)
 {
@@ -87,11 +89,14 @@ static void advance_offset(long sign);
 static void set_marker(void);
 static void list_markers(void);
 static void goto_marker(void);
+static void continue_find_cb(
+        unsigned char* from, size_t nfrom,
+        void* (*cb_search)(void*, size_t, void*, size_t));
 static void find_cb(
         unsigned char* from, size_t nfrom,
         void* (*cb_search)(void*, size_t, void*, size_t));
-static void find_forward(void);
-static void find_backward(void);
+static void find_forward(int prompt);
+static void find_backward(int prompt);
 
 // region functions
 static void blank_region(void);
@@ -149,8 +154,8 @@ static const char* HELP[] = {
 "g           goto address\n",
 "/           find\n",
 "?           rfind\n",
-//"n           continue search\n",
-//"N           reverse search\n",
+"n           continue searching forward\n",
+"N           continue searching backward\n",
 "<           insert nulls\n",
 ">           append nulls\n",
 "w, F2, ^S   write file\n",
@@ -694,6 +699,8 @@ void punch_interpreted(void)
     char choice = read_key("choice: ", "12345678qwer");
 
     switch(choice) {
+        case '\0':
+            break;
         case 'r':
             handle_keys = handle_text;
             break;
@@ -704,7 +711,8 @@ void punch_interpreted(void)
                     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                     "`0123456789-=[]|;',./"
                     "~!@#$%^&*()_+{}\\:\"<>?");
-            overwrite_mem(&c, 1);
+            if(c != 0)
+                overwrite_mem(&c, 1);
             }
             break;
         default:
@@ -842,6 +850,7 @@ int question(const char* q)
         if(c == 'N' || c == 'n') return 0;
         if(c == 3) return 0; // int
         if(c == 7) return 0; // bell
+        if(c == 27) return 0; // esc
     }
     return 0;
 }
@@ -1008,10 +1017,16 @@ void handle_normal(int c)
                         update_status();
                         break;
         case '/':
-                        find_forward();
+                        find_forward(1);
+                        break;
+        case 'n':
+                        find_forward(0);
                         break;
         case '?':
-                        find_backward();
+                        find_backward(1);
+                        break;
+        case 'N':
+                        find_backward(0);
                         break;
         case 'm':
                         set_marker();
@@ -1512,6 +1527,25 @@ void advance_offset(long sign)
     update_status();
 }
 
+void continue_find_cb(
+        unsigned char* from, size_t nfrom,
+        void* (*cb_search)(void*, size_t, void*, size_t))
+{
+    if(!nSearchString || !searchString) return;
+
+    unsigned char* p = cb_search(from, nfrom,
+                                 searchString, nSearchString);
+    if(p) {
+        memoffset = p - mem;
+        adjust_screen();
+        update_details();
+        update_status();
+    } else {
+        mvhline(LINES - 1, 0, ' ', COLS);
+        mvprintw(LINES - 1, 0, "Not found");
+    }
+}
+
 /* implementation of find forwards/backwards. Uses memsearch/rmemsearch.
    updates memoffset if anything is found. This does not loop around.  */
 void find_cb(
@@ -1521,20 +1555,13 @@ void find_cb(
     if(memsize == 0) return;
     char* s = read_string("? ");
 
-    if(!s) return;
+    if(!s || !*s) return;
 
     if(s[0] == 't') {
-        unsigned char* p = cb_search(from, nfrom,
-                                     s+1, strlen(s) - 1);
-        if(p) {
-            memoffset = p - mem;
-            adjust_screen();
-            update_details();
-            update_status();
-        } else {
-            mvhline(LINES - 1, 0, ' ', COLS);
-            mvprintw(LINES - 1, 0, "Not found");
-        }
+        nSearchString = strlen(s) - 1;
+        searchString = malloc(nSearchString);
+        memcpy(searchString, s+1, nSearchString);
+        continue_find_cb(from, nfrom, cb_search);
     } else {
         unsigned char* needle = malloc(1024);
         size_t cneedle = 1024, sneedle = 0;
@@ -1566,17 +1593,10 @@ void find_cb(
             needle[sneedle++] = (uc1 << 4) | uc2;
         } while(p < end);
 
-        unsigned char* found = cb_search(from, nfrom, 
-                                         needle, sneedle);
-        if(found) {
-            memoffset = found - mem;
-            adjust_screen();
-            update_details();
-            update_status();
-        } else {
-            mvhline(LINES - 1, 0, ' ', COLS);
-            mvprintw(LINES - 1, 0, "Not found");
-        }
+        nSearchString = sneedle;
+        searchString = malloc(sneedle);
+        memcpy(searchString, needle, nSearchString);
+        continue_find_cb(from, nfrom, cb_search);
     }
 
     return;
@@ -1588,29 +1608,31 @@ invalid_format:
 }
 
 /* prompts the user for a string and searches for the next occurrence.
-   This does not wrap around */
-void find_forward(void)
+   This does not wrap around.
+   If prompt == 1, asks the user for a search string. */
+void find_forward(int prompt)
 {
     if(memsize == 0 || memoffset == memsize - 1) return;
     unsigned char* from = mem + memoffset + 1;
     size_t nfrom = memsize - memoffset - 1;
-    return find_cb(from, nfrom, memsearch);
+    if(prompt)
+        return find_cb(from, nfrom, memsearch);
+    else
+        return continue_find_cb(from, nfrom, memsearch);
 }
 
 /* prompts the user for a string and searches for the previous occurrence.
-   This does not wrap around */
-void find_backward(void)
+   This does not wrap around.
+   If prompt == 1, asks the user for a search string. */
+void find_backward(int prompt)
 {
     if(memsize == 0 || memoffset == 0) return;
     unsigned char* from = mem;
-    // Why memoffset+1?
-    // Consider
-    //   00 00 00 00 42 00 43
-    //                     ^
-    // You'd expect rsearch "00 42 00 43" to put you 3 bytes back.
-    // That's why.
-    size_t nfrom = memoffset + 1;
-    return find_cb(from, nfrom, rmemsearch);
+    size_t nfrom = memoffset;
+    if(prompt)
+        return find_cb(from, nfrom, rmemsearch);
+    else
+        return continue_find_cb(from, nfrom, rmemsearch);
 }
 
 /* save an address in one of the 26 registers */
@@ -1619,6 +1641,8 @@ void set_marker(void)
     if(memsize == 0) return;
 
     char c = read_key("Which marker? ", "abcdefghijklmnopqrstuvwxyz");
+
+    if(c == 0) return;
 
     int i = c - 'a';
 
@@ -1653,6 +1677,8 @@ void goto_marker(void)
     if(memsize == 0) return;
 
     char c = read_key("Which marker? ", "abcdefghijklmnopqrstuvwxyz");
+
+    if(c == 0) return;
 
     int i = c - 'a';
 

@@ -92,6 +92,20 @@ make install
 Changes
 =======
 
+1.0.3 -> 1.0.4
+--------------
+
+- repeat search
+- fix compiler warnings
+- fix cancelling out of "Which marker?" prompts
+- fix punch in which would blank out a byte when trying to cancel out of the prompt
+- "ESC" is a valid key for "NO" given a yes/no question
+- backward searches start from the left of the cursor position;
+  reverse searches that would include the cursor position will no longer
+  match there; this is because it was impossible to search backwards for
+  a single byte; well, it could have been fixed differently, but that's
+  too much work
+
 1.0.1 -> 1.0.3
 --------------
 
