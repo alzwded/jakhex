@@ -9,7 +9,7 @@ Redistribution and use in source and binary forms, with or without modification,
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS” AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#define _POSIX_SOURCE
+#define _XOPEN_SOURCE 500
 
 #include <stdlib.h>
 #include <ctype.h>
@@ -18,6 +18,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS” 
 #include <unistd.h>
 #include <signal.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <errno.h>
 
 #include <curses.h>
@@ -55,14 +56,6 @@ unsigned char* clipboard = NULL;
 size_t clipboardsize = 0;
 unsigned char* searchString = NULL;
 size_t nSearchString = 0;
-
-char* mystrdup(const char* s)
-{
-    char* rval = malloc(strlen(s) + 1);
-    if(!rval) abort();
-    strcpy(rval, s);
-    return rval;
-}
 
 // exit function
 static void finish(int sig);
@@ -126,8 +119,9 @@ static void insert_file(size_t before);
 static void new_file(void);
 static void test_file(void);
 static void save_file(void);
-static void open_file1(void);
 static void open_file(void);
+static void open_file1(void);
+static void open_file2(FILE** f, ssize_t* sz);
 
 // main loop handlers
 // handle_normal handles "normal" hex input and command mode
@@ -245,7 +239,7 @@ int main(int argc, char* argv[])
         if(argc > 2) {
             offset = atol(argv[2]);
         }
-        fname = mystrdup(argv[1]);
+        fname = strdup(argv[1]);
     }
 
     /* if there's no tty, complain and exit;
@@ -282,6 +276,12 @@ int main(int argc, char* argv[])
         new_file();
         // try to open the file
         open_file1();
+        // if size is 0 maybe something weird happened?
+        if(memsize == 0) {
+            // read a character in case a message was up on screen;
+            // You sometimes get "Read 0 bytes", but at least you know
+            getch();
+        }
         // jump to the address specified
         if(offset == 0) memoffset = offset;
         else if(offset > 0 && offset < memsize) memoffset = offset;
@@ -388,7 +388,7 @@ void test_file(void)
         mem[i] = i;
     }
 
-    if(fname == NULL) fname = mystrdup("file.bin");
+    if(fname == NULL) fname = strdup("file.bin");
 
     const char* hellotext = "F1/! for help. Here's a sandbox.";
     memcpy(mem, hellotext, strlen(hellotext));
@@ -1313,7 +1313,7 @@ char* read_string(const char* prompt)
     }
 
     if(nbuf == 0) return NULL;
-    return mystrdup(buf);
+    return strdup(buf);
 }
 
 /* prompt the user for a file name. Updates `fname'. Prepopulates the
@@ -1363,7 +1363,7 @@ char* read_filename(void)
     }
 
     if(nbuf == 0) return NULL;
-    return mystrdup(buf);
+    return strdup(buf);
 }
 
 /* Save the full buffer to a file. Calls `read_filename()' */
@@ -1374,7 +1374,7 @@ void save_file(void)
     if(!buf) return;
 
     free(fname);
-    fname = mystrdup(buf);
+    fname = strdup(buf);
 
     FILE* f = fopen(buf, "wb");
     if(!f) {
@@ -1401,19 +1401,46 @@ void save_file(void)
     }
 }
 
-/* opens `fname' and loads data into the buffer */
-void open_file1(void)
+void open_file2(FILE** f, ssize_t* sz)
 {
-    FILE* f = fopen(fname, "rb");
-    if(!f) {
+    *f = NULL;
+    *sz = -1;
+    struct stat sb;
+    if(-1 == stat(fname, &sb)) {
         mvhline(LINES - 1, 0, ' ', COLS);
         mvprintw(LINES - 1, 0, "Failed to open %s for reading: %s", fname, strerror(errno));
         return;
     }
 
-    fseek(f, 0L, SEEK_END);
-    size_t sz = ftell(f);
-    fseek(f, 0L, SEEK_SET);
+    // only interested in files;
+    // directories are a no-go;
+    // devices might "never end", e.g. /dev/random,
+    // sockets might never get closed or yield in partial reads, etc.
+    // files only
+    if((sb.st_mode & S_IFREG) == 0) {
+        mvhline(LINES - 1, 0, ' ', COLS);
+        mvprintw(LINES - 1, 0, "Failed to open %s for reading: this is not a file!", fname);
+        return;
+    }
+
+    *sz = sb.st_size;
+
+    *f = fopen(fname, "rb");
+
+    if(!*f) {
+        mvhline(LINES - 1, 0, ' ', COLS);
+        mvprintw(LINES - 1, 0, "Failed to open %s for reading: %s", fname, strerror(errno));
+        return;
+    }
+}
+
+/* opens `fname' and loads data into the buffer */
+void open_file1(void)
+{
+    FILE* f = NULL;
+    ssize_t sz = -1;
+    open_file2(&f, &sz);
+    if(!f) return;
 
     unsigned char* newmem = malloc(sz);
     if(!newmem) abort();
@@ -1462,19 +1489,12 @@ void insert_file(size_t before)
     if(!buf) return;
 
     free(fname);
-    fname = mystrdup(buf);
+    fname = strdup(buf);
 
-    FILE* f = fopen(buf, "rb");
-    if(!f) {
-        mvhline(LINES - 1, 0, ' ', COLS);
-        mvprintw(LINES - 1, 0, "Failed to open %s for reading: %s", buf, strerror(errno));
-        free(buf);
-        return;
-    }
-
-    fseek(f, 0L, SEEK_END);
-    size_t sz = ftell(f);
-    fseek(f, 0L, SEEK_SET);
+    FILE* f = NULL;
+    ssize_t sz = -1;
+    open_file2(&f, &sz);
+    if(!f) return;
 
     insert_n_nulls(before, sz);
 
@@ -1797,7 +1817,7 @@ void write_region(void)
     if(!buf) return;
 
     free(fname);
-    fname = mystrdup(buf);
+    fname = strdup(buf);
 
     FILE* f = fopen(buf, "wb");
     if(!f) {
