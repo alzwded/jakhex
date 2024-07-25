@@ -1333,6 +1333,7 @@ char* read_filename(void)
         int c = mvgetch(LINES - 1, col + nbuf);
         switch(c) {
             case 3:
+            case 7:
             case 27:
                 nbuf = 0;
                 out = 1;
