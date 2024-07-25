@@ -89,6 +89,7 @@ static void advance_offset(long sign);
 static void set_marker(void);
 static void list_markers(void);
 static void goto_marker(void);
+static void save_search_string(void* s, size_t len);
 static void continue_find_cb(
         unsigned char* from, size_t nfrom,
         void* (*cb_search)(void*, size_t, void*, size_t));
@@ -1552,6 +1553,20 @@ void continue_find_cb(
     }
 }
 
+void save_search_string(void* s, size_t len)
+{
+    unsigned char* tosave = s;
+    nSearchString = len;
+    free(searchString);
+    searchString = malloc(nSearchString);
+    if(!searchString) {
+        // ignore the malloc error, it's fine to not save it
+        nSearchString = 0;
+        return;
+    }
+    memcpy(searchString, tosave, len);
+}
+
 /* implementation of find forwards/backwards. Uses memsearch/rmemsearch.
    updates memoffset if anything is found. This does not loop around.  */
 void find_cb(
@@ -1564,9 +1579,7 @@ void find_cb(
     if(!s || !*s) return;
 
     if(s[0] == 't') {
-        nSearchString = strlen(s) - 1;
-        searchString = malloc(nSearchString);
-        memcpy(searchString, s+1, nSearchString);
+        save_search_string(s+1, strlen(s) - 1);
         continue_find_cb(from, nfrom, cb_search);
     } else {
         unsigned char* needle = malloc(1024);
@@ -1599,9 +1612,7 @@ void find_cb(
             needle[sneedle++] = (uc1 << 4) | uc2;
         } while(p < end);
 
-        nSearchString = sneedle;
-        searchString = malloc(sneedle);
-        memcpy(searchString, needle, nSearchString);
+        save_search_string(needle, sneedle);
         continue_find_cb(from, nfrom, cb_search);
     }
 

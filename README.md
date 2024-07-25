@@ -92,6 +92,11 @@ make install
 Changes
 =======
 
+1.0.5 -> 1.0.6
+--------------
+
+Fix memory leak related to saved search strings.
+
 1.0.4 -> 1.0.5
 --------------
 

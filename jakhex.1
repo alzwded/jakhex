@@ -129,16 +129,22 @@ number, or prepend it with `0x' for a hex value.
 Jump backward an amount of bytes.
 .TP
 .B "g"
-Jump to an absolute address. When prompted, you may type in a decimal number, or prepend it with `0x' for a hex value.
+Jump to an absolute address. When prompted, you may type in a decimal number, or prepend it with `0x' for a hex value. Negative values are offsets from the end of the buffer.
 .SS Searching
 .TP
 .B /
-Jump to the next occurrence of the string after the current cursor position.
+Prompts for a string, then searches for the first occurrence of that string after the current cursor position.
+.TP
 .B ?
-Jump to the previous occurrence of the string just prior to the current cursor
-position.
+Prompts for a string, the finds the last occurrence of that string in the range [0, C), where `C' is the current cursor position.
+.TP
+.B n
+Equivalent to `/', but using the last prompt.
+.TP
+.B N
+Equivalent to `?', but using the last prompt.
 .PP
-Search commands change the prompt (bottom-left) to a
+The `/' and `?' search commands change the prompt (bottom-left) to a
 .B `?'
 and expect you to type in something. You can start typing in hex byte values,
 .I e.g.
@@ -148,7 +154,7 @@ Alternatively, you can type in
 .I `t'
 followed by printable ASCII text,
 .I e.g.
-.I "`tHello, World!'."
+.IR "`tHello, World!'" .
 Hitting
 .B `ENTER'
 commits to the search, hitting
