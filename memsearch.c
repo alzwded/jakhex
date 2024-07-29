@@ -141,9 +141,9 @@ END:
   */
 void*
 rmemsearch(
-        unsigned char* restrict vfhaystack,
+        void* restrict vfhaystack,
         size_t nhaystack,
-        unsigned char* restrict vfneedle,
+        void* restrict vfneedle,
         size_t nneedle
         )
 {
