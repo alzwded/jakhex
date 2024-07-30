@@ -14,6 +14,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS” 
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
+#include <stdint.h>
 
 #include <unistd.h>
 #include <signal.h>
@@ -398,7 +399,7 @@ void test_file(void)
     double dbls[] = { 1.0, 2.0, -3.0, 112233445566.0, -1122334455667788.0, 3.1415926535897931, -3.1415926535897931, 0.f };
     memcpy(mem + strlen(hellotext) + sizeof(floats), dbls, sizeof(dbls));
 
-    unsigned long specials[] = {
+    uint64_t specials[] = {
         0xFFFFFFFFFFFFFFFFul,
         0x7FFFFFFFFFFFFFFFul,
         0x8000000000000000ul,
