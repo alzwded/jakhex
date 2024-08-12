@@ -972,12 +972,14 @@ void handle_normal(int c)
         case '-':
                   advance_offset(-1);
                   break;
-        case KEY_F(1): myhelp(); break;
-        case 6:
+        case '!':
+        case KEY_F(1):
+                  myhelp(); break;
+        case 6: // ^F
         case ')':
         case KEY_NPAGE: pagemove(DOWN); break;
         case '(':
-        case 2:
+        case 2: // ^B
         case KEY_PPAGE: pagemove(UP); break;
         case KEY_HOME:
                         memoffset = 0;
