@@ -20,7 +20,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS” 
 #include <stdlib.h>
 #include <string.h>
 
-#define MEMMAX(A, B) (A > B ? A : B)
+#define MEMMAX(A, B) ((A) > (B) ? (A) : (B))
 
 #define masked_equals(b1, b2, mask) (((b1)&(mask)) == ((b2)&(mask)))
 

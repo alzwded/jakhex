@@ -15,3 +15,6 @@ install: jakhex
 
 clean:
 	rm -rf jakhex
+
+tidy:
+	clang-tidy --extra-arg=-std=c99 --extra-arg=-DVERSION='"tidy"' --config-file=tidy.yml $(SRCS)

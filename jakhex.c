@@ -9,12 +9,17 @@ Redistribution and use in source and binary forms, with or without modification,
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS” AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#define _XOPEN_SOURCE 500
+// NOLINTBEGIN
+#ifndef _XOPEN_SOURCE
+# define _XOPEN_SOURCE 500
+#endif
+// NOLINTEND
 
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #include <unistd.h>
 #include <signal.h>
@@ -24,18 +29,25 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS” 
 
 #include <curses.h>
 
-static float i32tofloat32(int i)
+static float i32tofloat32(unsigned i)
 {
     void* pv = &i;
     float* pf = (float*)pv;
     return *pf;
 }
 
-static double i64tofloat64(long i)
+static double i64tofloat64(unsigned long i)
 {
     void* pv = &i;
     double* pf = (double*)pv;
     return *pf;
+}
+
+static void grow_vector(unsigned char** p, size_t sz)
+{
+    void* np = realloc(*p, sz);
+    if(!np) free(*p);
+    *p = np;
 }
 
 extern void*
@@ -270,6 +282,7 @@ int main(int argc, char* argv[])
     //      unicode strings.
     //setlocale(LC_ALL, "");
 
+    // FIXME finish isn't an OK function to call from a signal handler...
     signal(SIGQUIT, finish);
     signal(SIGTERM, finish);
 
@@ -298,9 +311,11 @@ int main(int argc, char* argv[])
             getch();
         }
         // jump to the address specified
-        if(offset == 0) memoffset = offset;
-        else if(offset > 0 && offset < memsize) memoffset = offset;
-        else {
+        if(offset == 0 || 
+                (offset > 0 && offset < memsize))
+        {
+            memoffset = offset;
+        } else {
             offset = -offset;
             if(offset < memsize) memoffset = memsize - offset;
         }
@@ -314,9 +329,9 @@ int main(int argc, char* argv[])
 
     // main loop
     for(;;) {
-        int line = memoffset / 32;
-        int wline = line - windowOffset;
-        int byte = memoffset % 32;
+        size_t line = memoffset / 32;
+        int wline = (int)(line - windowOffset);
+        int byte = (int)(memoffset % 32);
         int col = 9 + (byte/4) + byte*2 + lownibble;
         int c = mvgetch(wline, col); // TODO move back to where we "were"
 
@@ -337,7 +352,7 @@ void redraw(void)
 
     // print file
     for(size_t i = 0; i < LINES - 10 - 1; ++i) {
-        int loffset = (windowOffset + i) * 32ul;
+        size_t loffset = (windowOffset + i) * 32ul;
         // address of first byte of line
         attron(A_STANDOUT);
         mvaddch(i, 0, HEX[(loffset >>28) & 0xF]);
@@ -383,7 +398,7 @@ void finish(int code)
 /* allocate an initial memory buffer */
 void new_file(void)
 {
-    mem = realloc(mem, 64ul * 1024ul);
+    grow_vector(&mem, 64ul * 1024ul);
     if(!mem) abort();
     memcapacity = 64ul * 1024ul;
     memsize = 0;
@@ -406,7 +421,7 @@ void test_file(void)
     if(fname == NULL) fname = strdup("file.bin");
 
     const char* hellotext = "F1/! for help. Here's a sandbox.";
-    memcpy(mem, hellotext, strlen(hellotext));
+    memcpy(mem, hellotext, strlen(hellotext)); // NOLINT
 
     float floats[] = { 1.f, 2.f, -3.f, 112233445566.f, -1122334455667788.f, 3.14159f, -3.14159f, 0.f };
     memcpy(mem + strlen(hellotext), floats, sizeof(floats));
@@ -520,8 +535,8 @@ void show_detailed_cursor(void)
             memoffset, memsize,
             lownibble ? "low" : "high");
 
-    double dblMemsize = memsize + !memsize;
-    int percent = (int)((memoffset + 0.5 * lownibble) * 100.0 / dblMemsize);
+    double dblMemsize = (double)(memsize + !memsize);
+    int percent = (int)(((double)memoffset + 0.5 * (double)lownibble) * 100.0 / dblMemsize);
     mvprintw(LINES - 1, COLS - 5, "%3d%%", percent);
 }
 
@@ -538,7 +553,7 @@ void update_status(void)
     }
     mvaddch(LINES - 1, 1, ' ');
     size_t lll = strlen(fname);
-    for(int i = 0; i < COLS - 22 - 2; ++i) {
+    for(size_t i = 0; i < COLS - 22 - 2; ++i) {
         // TODO utf-8/unicode in general
         // TODO right align and trim left
         char c = (i < lll) ? fname[i] : ' ';
@@ -554,8 +569,8 @@ void update_status(void)
                 memoffset, memsize);
     }
 
-    double dblMemsize = memsize + !memsize;
-    int percent = (int)((memoffset + 0.5 * lownibble) * 100.0 / dblMemsize);
+    double dblMemsize = (double)(memsize + !memsize);
+    int percent = (int)(((double)memoffset + 0.5 * (double)lownibble) * 100.0 / dblMemsize);
     mvprintw(LINES - 1, COLS - 5, "%3d%%", percent);
 }
 
@@ -587,9 +602,9 @@ void update_details(void)
                   | (mem[memoffset + 1] << 16) | (mem[memoffset + 0] << 24)
                   ;
         mvprintw(LINES - 8 - 1, 0, "u32le: %-10u", i32le);
-        mvprintw(LINES - 8 - 1, 18, "s32le: %-11d", (signed)i32le);
+        mvprintw(LINES - 8 - 1, 18, "s32le: %-11d", *((signed*)&i32le));
         mvprintw(LINES - 8 - 1, 18 + 19, "u32be: %-10u", i32be);
-        mvprintw(LINES - 8 - 1, 18 + 19 + 18, "s32be: %-11d", (signed)i32be);
+        mvprintw(LINES - 8 - 1, 18 + 19 + 18, "s32be: %-11d", *((signed*)&i32be));
 
         float f32le = i32tofloat32(i32le);
         float f32be = i32tofloat32(i32be);
@@ -618,10 +633,10 @@ void update_details(void)
         i64be |= mem[memoffset + 6]; i64be <<= 8;
         i64be |= mem[memoffset + 7];
         mvprintw(LINES - 7 - 1, 0, "u64le: %-20lu", i64le);
-        mvprintw(LINES - 7 - 1, 28, "s64le: %-21ld", (signed long)i64le);
+        mvprintw(LINES - 7 - 1, 28, "s64le: %-21ld", *((signed long*)&i64le));
         mvprintw(LINES - 7 - 1, 57, "h64le: %016lx", i64le);
         mvprintw(LINES - 6 - 1, 0, "u64be: %-20lu", i64be);
-        mvprintw(LINES - 6 - 1, 28, "s64be: %-21ld", (signed long)i64be);
+        mvprintw(LINES - 6 - 1, 28, "s64be: %-21ld", *((signed long*)&i64be));
 
         mvprintw(LINES - 6 - 1, 57, "h64be: %016lx", i64be);
 
@@ -675,8 +690,8 @@ void punch(int ic)
 
 
     // update screen...
-    int l = memoffset / 32 - windowOffset;
-    int sb = memoffset % 32;
+    int l = (int)(memoffset / 32 - windowOffset);
+    int sb = (int)(memoffset % 32);
     int sc = 9 + sb / 4 + sb * 2 + lownibble;
     mvaddch(l, sc, c);
     mymove(RIGHT);
@@ -844,8 +859,8 @@ void punch_interpreted(void)
 /* punch in ASCII characters in text input mode */
 void punch_ascii(int c)
 {
-    int l = memoffset / 32 - windowOffset;
-    int sb = memoffset % 32;
+    int l = (int)(memoffset / 32 - windowOffset);
+    int sb = (int)(memoffset % 32);
     int sc = 9 + sb / 4 + sb * 2 + lownibble;
     mem[memoffset] = c & 0xFF;
     mvaddch(l, sc+0, HEX[(c >> 4) & 0xF]);
@@ -1183,7 +1198,7 @@ void insert_n_nulls(size_t before, size_t nbytes)
     if(memcapacity < memsize + nbytes) {
         size_t byThisMuch = nbytes;
         if(byThisMuch < 64ul * 1024ul) byThisMuch = 1024ul;
-        mem = realloc(mem, memcapacity + byThisMuch);
+        grow_vector(&mem, memcapacity + byThisMuch);
         if(!mem) abort();
         memcapacity += byThisMuch;
     }
@@ -1319,7 +1334,7 @@ char* read_string(const char* prompt)
                 break;
             default:
                 if(c >= 0 && c < 256 && nbuf < 4095) {
-                    buf[nbuf++] = c;
+                    buf[nbuf++] = c & 0xFF;
                 }
                 break;
         }
@@ -1369,7 +1384,7 @@ char* read_filename(void)
                 break;
             default:
                 if(c >= 0 && c < 256 && nbuf < 4095) {
-                    buf[nbuf++] = c;
+                    buf[nbuf++] = c & 0xFF;
                 }
                 break;
         }
@@ -1397,7 +1412,7 @@ void save_file(void)
     if(!f) {
         mvhline(LINES - 1, 0, ' ', COLS);
         mvprintw(LINES - 1, 0, "Failed to open %s for writing: %s", buf, strerror(errno));
-        return;
+        goto end1;
     }
 
     size_t written = fwrite(mem, 1, memsize, f);
@@ -1414,6 +1429,8 @@ void save_file(void)
         }
     }
     fclose(f);
+end1:
+    free(buf);
 }
 
 void open_file2(FILE** f, ssize_t* sz)
@@ -1509,7 +1526,10 @@ void insert_file(size_t before)
     FILE* f = NULL;
     ssize_t sz = -1;
     open_file2(&f, &sz);
-    if(!f) return;
+    if(!f) {
+        free(buf);
+        return;
+    }
 
     insert_n_nulls(before, sz);
 
@@ -1559,10 +1579,10 @@ void advance_offset(long sign)
     free(s);
     long adjusted = ((long)memoffset) + sign * addr;
     while(adjusted < 0l) {
-        adjusted += memsize;
+        adjusted += (long)memsize;
     }
     while(adjusted >= memsize) {
-        adjusted -= memsize;
+        adjusted -= (long)memsize;
     }
     memoffset = adjusted;
     adjust_screen();
@@ -1618,14 +1638,18 @@ void save_search_string(void* s, size_t len, void* mask)
     unsigned char* masktosave = mask;
     nSearchString = len;
     free(searchString);
+    free(searchStringMask);
+
+    if(nSearchString == 0) return;
+
     searchString = malloc(nSearchString);
     if(!searchString) {
         // ignore the malloc error, it's fine to not save it
         nSearchString = 0;
+        return;
     } else {
         memcpy(searchString, tosave, len);
     }
-    free(searchStringMask);
     if(masktosave) {
         searchStringMask = malloc(nSearchString);
         if(!searchStringMask) {
@@ -1698,10 +1722,10 @@ void find_cb(
                 if(sneedle >= cneedle)
                 {
                     cneedle *= 2;
-                    needle = realloc(needle, cneedle);
+                    grow_vector(&needle, cneedle);
                     if(!needle)
                         abort();
-                    mask = realloc(mask, cneedle);
+                    grow_vector(&mask, cneedle);
                     if(!mask)
                         abort();
                 }
@@ -1748,7 +1772,7 @@ void find_cb(
 
             if(sneedle >= cneedle) {
                 cneedle *= 2;
-                needle = realloc(needle, cneedle);
+                grow_vector(&needle, cneedle);
                 if(!needle) {
                     abort();
                 }
@@ -1940,12 +1964,12 @@ void write_region(void)
     if(!buf) return;
 
     free(fname);
-    fname = strdup(buf);
+    fname = buf;
 
-    FILE* f = fopen(buf, "wb");
+    FILE* f = fopen(fname, "wb");
     if(!f) {
         mvhline(LINES - 1, 0, ' ', COLS);
-        mvprintw(LINES - 1, 0, "Failed to open %s for writing: %s", buf, strerror(errno));
+        mvprintw(LINES - 1, 0, "Failed to open %s for writing: %s", fname, strerror(errno));
         return;
     }
 
@@ -1956,7 +1980,7 @@ void write_region(void)
     } else {
         if(ferror(f)) {
             mvhline(LINES - 1, 0, ' ', COLS);
-            mvprintw(LINES - 1, 0, "Failed to write %s: %s", buf, strerror(errno));
+            mvprintw(LINES - 1, 0, "Failed to write %s: %s", fname, strerror(errno));
         } else {
             mvhline(LINES - 1, 0, ' ', COLS);
             mvprintw(LINES - 1, 0, "Wrote %zd out of %zd bytes", written, a2 - a1 + 1);
