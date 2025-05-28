@@ -177,8 +177,9 @@ and
 .I 0
 mean the respective bits are set or unset.
 The patterns are byte aligned and match at byte boundaries.
-If you punch in fewer bits than a full byte, the pattern will be right-padded with 
+If you punch in fewer bits than a full byte, the last byte will be right-padded with 
 .IR "`don't care'" s.
+Whitespace is ignored by the parser.
 .SS Editing Bytes
 .TP
 .I "Number keys 0-9 and a-f"
@@ -359,9 +360,6 @@ to get the line width to align with a round number that's easy to do maths with
 .IP "    \(bu" 6
 only the bottom 32bits of addresses are printed in the first column, because
 I ran out of space
-.IP \(bu 2
-searching doesn't remember what you previously searched for (but you can use
-tmux's/X11's kill buffer to repeatedly paste the same search string)
 .IP \(bu 2
 the details pane can't be hidden, so you need at least 13 lines of screen
 .IP \(bu 2

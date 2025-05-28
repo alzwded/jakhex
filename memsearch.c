@@ -22,13 +22,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS” 
 
 #define MEMMAX(A, B) (A > B ? A : B)
 
-static int masked_equals(
-        unsigned char b1,
-        unsigned char b2,
-        unsigned char mask)
-{
-    return (b1&mask) == (b2&mask);
-}
+#define masked_equals(b1, b2, mask) (((b1)&(mask)) == ((b2)&(mask)))
 
 /** bpatmemsearch
   * 

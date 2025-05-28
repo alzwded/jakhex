@@ -23,7 +23,7 @@ It supports the following **features**:
 - region based delete, copy, insert and overwrite commands using a single
   clipboard buffer
 - efficiently search both forward and backwards for an arbitrary binary string,
-  typed in either in hex or ASCII
+  typed in either in hex, masked binary, or ASCII
 - ability to edit large files, to the extent of your patience and RAM.
   I've successfully edited files slightly larger than 4GiB.
 
@@ -36,10 +36,7 @@ It has the following *limitations*:
   * other hex editors annoy me in that I need to fiddle with the screen size
     to get the line width to align with a round number that's easy to do maths with
   * only the bottom 32bits of addresses are printed in the first column, because I ran out of screen space
-- searching doesn't remember what you previously searched for (but you can use
-  tmux's/X11's kill buffer to repeatedly paste the same search string)
 - the details pane can't be hidden, so you need at least 13 lines of screen
-- searching doesn't support patterns nor regular expressions
 - region commands always prompt you for a pair of markers
 - keys are not rebindable, and the bindings are brain dead. Be sure to print
   out a cheat sheet!
