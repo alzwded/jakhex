@@ -1387,7 +1387,6 @@ void save_file(void)
     }
 
     size_t written = fwrite(mem, 1, memsize, f);
-    fclose(f);
     if(written == memsize) {
         mvhline(LINES - 1, 0, ' ', COLS);
         mvprintw(LINES - 1, 0, "Wrote %zd bytes", written);
@@ -1395,13 +1394,12 @@ void save_file(void)
         if(ferror(f)) {
             mvhline(LINES - 1, 0, ' ', COLS);
             mvprintw(LINES - 1, 0, "Failed to write %s: %s", buf, strerror(errno));
-            return;
         } else {
             mvhline(LINES - 1, 0, ' ', COLS);
             mvprintw(LINES - 1, 0, "Wrote %zd out of %zd bytes", written, memsize);
-            return;
         }
     }
+    fclose(f);
 }
 
 void open_file2(FILE** f, ssize_t* sz)
@@ -1830,7 +1828,6 @@ void write_region(void)
     }
 
     size_t written = fwrite(mem + a1, 1, a2 - a1 + 1, f);
-    fclose(f);
     if(written == a2 - a1 + 1) {
         mvhline(LINES - 1, 0, ' ', COLS);
         mvprintw(LINES - 1, 0, "Wrote %zd bytes", written);
@@ -1838,13 +1835,12 @@ void write_region(void)
         if(ferror(f)) {
             mvhline(LINES - 1, 0, ' ', COLS);
             mvprintw(LINES - 1, 0, "Failed to write %s: %s", buf, strerror(errno));
-            return;
         } else {
             mvhline(LINES - 1, 0, ' ', COLS);
             mvprintw(LINES - 1, 0, "Wrote %zd out of %zd bytes", written, a2 - a1 + 1);
-            return;
         }
     }
+    fclose(f);
 }
 
 /* insert the contents of the hidden buffer at the specified location */
