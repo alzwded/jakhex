@@ -42,6 +42,10 @@ extern void*
 memsearch(void*, size_t, void*, size_t);
 extern void*
 rmemsearch(void*, size_t, void*, size_t);
+extern void*
+bpatmemsearch(void*, size_t, void*, size_t, void*);
+extern void*
+bpatrmemsearch(void*, size_t, void*, size_t, void*);
 
 // buffer state
 unsigned char* mem = NULL;
@@ -56,6 +60,7 @@ size_t markers[26];
 unsigned char* clipboard = NULL;
 size_t clipboardsize = 0;
 unsigned char* searchString = NULL;
+unsigned char* searchStringMask = NULL;
 size_t nSearchString = 0;
 
 // exit function
@@ -83,13 +88,17 @@ static void advance_offset(long sign);
 static void set_marker(void);
 static void list_markers(void);
 static void goto_marker(void);
-static void save_search_string(void* s, size_t len);
+static void save_search_string(void* s, size_t len, void* mask);
+enum SEARCH_DIRECTION {
+    FORWARDS,
+    BACKWARDS
+};
 static void continue_find_cb(
         unsigned char* from, size_t nfrom,
-        void* (*cb_search)(void*, size_t, void*, size_t));
+        enum SEARCH_DIRECTION direction);
 static void find_cb(
         unsigned char* from, size_t nfrom,
-        void* (*cb_search)(void*, size_t, void*, size_t));
+        enum SEARCH_DIRECTION direction);
 static void find_forward(int prompt);
 static void find_backward(int prompt);
 
@@ -192,8 +201,13 @@ static const char* HELP[] = {
 "\n",
 "find syntax:\n",
 //"' \\t'       whitespace ignored\n",
-"0f fe 42    specific bytes\n",
-"ttext       ascii text\n",
+"0f fe 42    specific bytes, in hex\n",
+"tsome text  ascii text\n",
+"m0x0xxxxx 0x1xxxxx\n",
+"            bit patterns:\n",
+"            x = don't care\n",
+"            1 = set bit\n",
+"            0 = unset bit\n",
 "\n",
 "text input mode (shows an A bottom left):\n", "F1         help\n",
 "printable  punches in said characters\n",
@@ -1558,12 +1572,35 @@ void advance_offset(long sign)
 
 void continue_find_cb(
         unsigned char* from, size_t nfrom,
-        void* (*cb_search)(void*, size_t, void*, size_t))
+        enum SEARCH_DIRECTION direction)
 {
     if(!nSearchString || !searchString) return;
 
-    unsigned char* p = cb_search(from, nfrom,
-                                 searchString, nSearchString);
+    unsigned char* p = NULL;
+    unsigned lutkey = ((searchStringMask != NULL) << 1)
+                    | (direction == BACKWARDS)
+                    ;
+
+    switch(lutkey)
+    {
+        case 0:
+            p = memsearch(from, nfrom,
+                          searchString, nSearchString);
+            break;
+        case 1:
+            p = rmemsearch(from, nfrom,
+                           searchString, nSearchString);
+            break;
+        case 2:
+            p = bpatmemsearch(from, nfrom,
+                              searchString, nSearchString, searchStringMask);
+            break;
+        case 3:
+            p = bpatrmemsearch(from, nfrom,
+                               searchString, nSearchString, searchStringMask);
+            break;
+    }
+
     if(p) {
         memoffset = p - mem;
         adjust_screen();
@@ -1575,25 +1612,38 @@ void continue_find_cb(
     }
 }
 
-void save_search_string(void* s, size_t len)
+void save_search_string(void* s, size_t len, void* mask)
 {
     unsigned char* tosave = s;
+    unsigned char* masktosave = mask;
     nSearchString = len;
     free(searchString);
     searchString = malloc(nSearchString);
     if(!searchString) {
         // ignore the malloc error, it's fine to not save it
         nSearchString = 0;
-        return;
+    } else {
+        memcpy(searchString, tosave, len);
     }
-    memcpy(searchString, tosave, len);
+    free(searchStringMask);
+    if(masktosave) {
+        searchStringMask = malloc(nSearchString);
+        if(!searchStringMask) {
+            // ignore the malloc, error, it's fine to not save it
+            nSearchString = 0;
+            // and empty out the base search string
+            free(searchString);
+        } else {
+            memcpy(searchStringMask, masktosave, len);
+        }
+    }
 }
 
 /* implementation of find forwards/backwards. Uses memsearch/rmemsearch.
    updates memoffset if anything is found. This does not loop around.  */
 void find_cb(
         unsigned char* from, size_t nfrom,
-        void* (*cb_search)(void*, size_t, void*, size_t))
+        enum SEARCH_DIRECTION direction)
 {
     if(memsize == 0) return;
     char* s = read_string("? ");
@@ -1601,8 +1651,76 @@ void find_cb(
     if(!s || !*s) return;
 
     if(s[0] == 't') {
-        save_search_string(s+1, strlen(s) - 1);
-        continue_find_cb(from, nfrom, cb_search);
+        save_search_string(s+1, strlen(s) - 1, NULL);
+        continue_find_cb(from, nfrom, direction);
+    } else if(s[0] == 'm') {
+        // x or . is "don't care" (mask 0);
+        // 0 is 0 (mask 1);
+        // 1 is 1 (mask 1);
+        // space is ignored;
+        // MSB leaning (i.e. if you type in 5 bits, they
+        // are the most significant bits)
+        unsigned char* needle = malloc(1024);
+        size_t cneedle = 1024, sneedle = 0;
+        unsigned char* mask = malloc(1024);
+        char* p = s + 1, *end = s + strlen(s);
+        size_t nbits = 0;
+        do {
+            while(*p == ' ' || *p == '\t') ++p;
+            if(*p == '0') {
+                needle[sneedle] <<= 1;
+                needle[sneedle] &= 0xFEu;
+                mask[sneedle] <<= 1;
+                mask[sneedle] |= 0x1u;
+                nbits++;
+            } else if(*p == '1') {
+                needle[sneedle] <<= 1;
+                needle[sneedle] |= 0x1;
+                mask[sneedle] <<= 1;
+                mask[sneedle] |= 0x1u;
+                nbits++;
+            } else if(*p == 'x' || *p == '.' || *p == 'X') {
+                needle[sneedle] <<= 1;
+                needle[sneedle] &= 0xFEu;
+                mask[sneedle] <<= 1;
+                mask[sneedle] &= 0xFEu;
+                nbits++;
+            } else {
+                free(needle);
+                free(mask);
+                goto invalid_format;
+            }
+            if(nbits >= 8) {
+                sneedle++;
+                nbits = 0;
+                if(sneedle >= cneedle)
+                {
+                    cneedle *= 2;
+                    needle = realloc(needle, cneedle);
+                    if(!needle)
+                        abort();
+                    mask = realloc(mask, cneedle);
+                    if(!mask)
+                        abort();
+                }
+            }
+            ++p;
+        } while(p < end);
+        // any bits left over?
+        if(nbits > 0) {
+            // pad them with d/c
+            while(nbits < 8)
+            {
+                needle[sneedle] <<= 1;
+                needle[sneedle] &= 0xFEu;
+                mask[sneedle] <<= 1;
+                mask[sneedle] &= 0xFEu;
+                nbits++;
+            }
+            sneedle++;
+        }
+        save_search_string(needle, sneedle, mask);
+        continue_find_cb(from, nfrom, direction);
     } else {
         unsigned char* needle = malloc(1024);
         size_t cneedle = 1024, sneedle = 0;
@@ -1611,6 +1729,7 @@ void find_cb(
             while(*p == ' ' || *p == '\t') ++p;
             // should be able to grab two chars
             if(*p != '\0' && p >= end - 1) {
+                free(needle);
                 goto invalid_format;
             }
             char c1 = *p, c2 = *(p + 1);
@@ -1619,6 +1738,7 @@ void find_cb(
             char *pc2 = strchr(HEX, tolower(c2));
             if(!pc1 || !pc2)
             {
+                free(needle);
                 goto invalid_format;
             }
             unsigned char uc1 = pc1 - HEX;
@@ -1634,8 +1754,8 @@ void find_cb(
             needle[sneedle++] = (uc1 << 4) | uc2;
         } while(p < end);
 
-        save_search_string(needle, sneedle);
-        continue_find_cb(from, nfrom, cb_search);
+        save_search_string(needle, sneedle, NULL);
+        continue_find_cb(from, nfrom, direction);
     }
 
     return;
@@ -1655,9 +1775,9 @@ void find_forward(int prompt)
     unsigned char* from = mem + memoffset + 1;
     size_t nfrom = memsize - memoffset - 1;
     if(prompt)
-        return find_cb(from, nfrom, memsearch);
+        return find_cb(from, nfrom, FORWARDS);
     else
-        return continue_find_cb(from, nfrom, memsearch);
+        return continue_find_cb(from, nfrom, FORWARDS);
 }
 
 /* prompts the user for a string and searches for the previous occurrence.
@@ -1669,9 +1789,9 @@ void find_backward(int prompt)
     unsigned char* from = mem;
     size_t nfrom = memoffset;
     if(prompt)
-        return find_cb(from, nfrom, rmemsearch);
+        return find_cb(from, nfrom, BACKWARDS);
     else
-        return continue_find_cb(from, nfrom, rmemsearch);
+        return continue_find_cb(from, nfrom, BACKWARDS);
 }
 
 /* save an address in one of the 26 registers */
