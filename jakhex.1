@@ -164,6 +164,21 @@ commits to the search, hitting
 , or
 .B `ESCAPE'
 cancels out.
+.PP
+You can search for bit patterns with the `m' prefix,
+.I e.g.
+.IR "`m0x0xxxxx 0x1xxxxx'" ,
+which will find a sequence of two bytes with the 0s and 1s in the respective spots.
+.I X
+means
+.IR "`don't care'" .
+.I 1
+and
+.I 0
+mean the respective bits are set or unset.
+The patterns are byte aligned and match at byte boundaries.
+If you punch in fewer bits than a full byte, the pattern will be right-padded with 
+.IR "`don't care'" s.
 .SS Editing Bytes
 .TP
 .I "Number keys 0-9 and a-f"
@@ -377,3 +392,6 @@ command line invocation only accepts decimal input
 string search limits you to a 2^31-2 long needle, but I hope that doesn't
 bother you. I haven't actually tested with anything longer than what you
 can type off the top of your head, so it's more of a theoretical limit
+.IP \(bu 2
+bit pattern string searches only match at byte boundaries, i.e. it is a
+masked byte-wise search, not a bit-wise search.
