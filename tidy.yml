@@ -9,6 +9,7 @@ Checks: >
   -bugprone-easily-swappable-parameters,
   misc-*,
   modernize-*,
+  performance-*,
   -bugprone-narrowing-conversions
 WarningsAsErrors: ''
 HeaderFileExtensions:
