@@ -1,4 +1,4 @@
-VERSION = 1.1.2
+VERSION = 1.1.3
 CC ?= gcc
 CFLAGS ?= -O2 -Wall -std=c99
 LDFLAGS ?= -lcurses
