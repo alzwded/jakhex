@@ -1,7 +1,7 @@
 .TH JAKHEX 1 "20 June 2024" "jakhex"
 .SH NAME
 jakhex \- curses based full screen hex editor
-.SH SYNOPSYS
+.SH SYNOPSIS
 .I jakhex
 [file [+offset]]
 .P
@@ -13,7 +13,7 @@ jakhex \- curses based full screen hex editor
 Prints invocation and key bindings.
 .TP
 .I "+offset"
-Given after a file, represents a jump offset into the file. Positive numbers are an asbolute addresses. Negative numbers are offsets from the end, -1 being the last byte.
+Given after a file, represents a jump offset into the file. Positive numbers are absolute addresses. Negative numbers are offsets from the end, -1 being the last byte.
 .SH DESCRIPTION
 .I jakhex
 is a full screen, curses based hex editor. It can not only view, but also edit,
@@ -247,7 +247,7 @@ a hidden buffer.
 Inserts the contents of the hidden clipboard buffer at the current cursor position.
 .TP
 .B P
-Inserts the contents of the hiddent clipboard buffer AFTER the current cursor position.
+Inserts the contents of the hidden clipboard buffer AFTER the current cursor position.
 .TP
 .B *
 Overwrites memory starting from the current cursor position with the contents
@@ -291,7 +291,7 @@ Punches in those bytes as you type them.
 Move around
 .TP
 .B "PGUP, PGDOWN"
-Move around one sceen at a time.
+Move around one screen at a time.
 .TP
 .B "BACKSPACE"
 Move left. This does not
@@ -343,7 +343,7 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS” AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .SH LIMITATIONS
 .IP \(bu 2
-its in-memory buffer is stored as a big contiugous array
+its in-memory buffer is stored as a big contiguous array
 .IP "    \(bu" 6
 meaning, loading files implies trying to allocate that much memory
 .IP "    \(bu" 6
