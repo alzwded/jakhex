@@ -1633,6 +1633,8 @@ void save_search_string(void* s, size_t len, void* mask)
             nSearchString = 0;
             // and empty out the base search string
             free(searchString);
+            // ...and NULL it
+            searchString = NULL;
         } else {
             memcpy(searchStringMask, masktosave, len);
         }
