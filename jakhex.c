@@ -76,7 +76,7 @@ unsigned char* searchStringMask = NULL;
 size_t nSearchString = 0;
 
 // exit function
-static void finish(int sig);
+static void finish(void);
 static void showhelp(const char* argv0);
 
 // drawing functions
@@ -282,9 +282,10 @@ int main(int argc, char* argv[])
     //      unicode strings.
     //setlocale(LC_ALL, "");
 
-    // FIXME finish isn't an OK function to call from a signal handler...
-    signal(SIGQUIT, finish);
-    signal(SIGTERM, finish);
+    // allegedly ncurses has signal handlers;
+    // finish() is unsafe to call in a signal handler
+    //signal(SIGQUIT, finish);
+    //signal(SIGTERM, finish);
 
     // init curses
     initscr();
@@ -388,10 +389,11 @@ void redraw(void)
 }
 
 /* exits program. Tears down curses beforehand */
-void finish(int code)
+void finish(void)
 {
     endwin();
     // TODO save swap file if we can and we didn't force quit?
+    //      note: endwin() is unsafe to call in a signal handler
     exit(0);
 }
 
@@ -946,10 +948,10 @@ void handle_normal(int c)
 {
     // single character codes...
     switch(c) {
-        case 'Q': finish(SIGTERM); break;
+        case 'Q': finish(); break;
         case 'q':
                   if(question("Exit without saving?")) {
-                      finish(SIGTERM);
+                      finish();
                   } else {
                       update_status();
                   }
